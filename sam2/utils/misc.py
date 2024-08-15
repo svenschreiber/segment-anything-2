@@ -167,6 +167,7 @@ def load_video_frames(
     img_mean=(0.485, 0.456, 0.406),
     img_std=(0.229, 0.224, 0.225),
     async_loading_frames=False,
+    reversed_order=False,
 ):
     """
     Load the video frames from a directory of JPEG files ("<frame_index>.jpg" format).
@@ -186,7 +187,9 @@ def load_video_frames(
         for p in os.listdir(jpg_folder)
         if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]
     ]
-    frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
+    # slice [5:] because our files are named 'frame0000'
+    # sort in negative diretion when going in reverse direction
+    frame_names.sort(key=lambda p: -int(os.path.splitext(p)[0][5:]) if reversed_order else int(os.path.splitext(p)[0][5:]))
     num_frames = len(frame_names)
     if num_frames == 0:
         raise RuntimeError(f"no images found in {jpg_folder}")

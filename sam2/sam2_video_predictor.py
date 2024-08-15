@@ -43,6 +43,7 @@ class SAM2VideoPredictor(SAM2Base):
         offload_video_to_cpu=False,
         offload_state_to_cpu=False,
         async_loading_frames=False,
+        reversed_order=False,
     ):
         """Initialize a inference state."""
         images, video_height, video_width = load_video_frames(
@@ -50,6 +51,7 @@ class SAM2VideoPredictor(SAM2Base):
             image_size=self.image_size,
             offload_video_to_cpu=offload_video_to_cpu,
             async_loading_frames=async_loading_frames,
+            reversed_order=reversed_order,
         )
         inference_state = {}
         inference_state["images"] = images
