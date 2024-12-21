@@ -12,7 +12,7 @@ import torch
 from tqdm import tqdm
 
 from sam2.modeling.sam2_base import NO_OBJ_SCORE, SAM2Base
-from sam2.utils.misc import concat_points, fill_holes_in_mask_scores, load_video_frames
+from sam2.utils.misc import concat_points, fill_holes_in_mask_scores, load_video_frames, remove_sprinkles_in_mask_scores
 
 
 class SAM2VideoPredictor(SAM2Base):
@@ -21,6 +21,7 @@ class SAM2VideoPredictor(SAM2Base):
     def __init__(
         self,
         fill_hole_area=0,
+        max_sprinkle_area=0,
         # whether to apply non-overlapping constraints on the output object masks
         non_overlap_masks=False,
         # whether to clear non-conditioning memory of the surrounding frames (which may contain outdated information) after adding correction clicks;
@@ -32,6 +33,7 @@ class SAM2VideoPredictor(SAM2Base):
     ):
         super().__init__(**kwargs)
         self.fill_hole_area = fill_hole_area
+        self.max_sprinkle_area = max_sprinkle_area
         self.non_overlap_masks = non_overlap_masks
         self.clear_non_cond_mem_around_input = clear_non_cond_mem_around_input
         self.clear_non_cond_mem_for_multi_obj = clear_non_cond_mem_for_multi_obj
@@ -875,6 +877,8 @@ class SAM2VideoPredictor(SAM2Base):
             pred_masks_gpu = fill_holes_in_mask_scores(
                 pred_masks_gpu, self.fill_hole_area
             )
+        if self.max_sprinkle_area > 0:
+            pred_masks_gpu = remove_sprinkles_in_mask_scores(pred_masks_gpu, self.max_sprinkle_area)
         pred_masks = pred_masks_gpu.to(storage_device, non_blocking=True)
         # "maskmem_pos_enc" is the same across frames, so we only need to store one copy of it
         maskmem_pos_enc = self._get_maskmem_pos_enc(inference_state, current_out)

@@ -267,6 +267,34 @@ def fill_holes_in_mask_scores(mask, max_area):
 
     return mask
 
+def remove_sprinkles_in_mask_scores(mask, max_area):
+    """
+    A post processor to remove small sprinkles in mask scores with area under `max_area`.
+    """
+    # Sprinkles are those connected components in foreground with area <= self.max_area
+    # (background regions are those with mask scores <= 0)
+    assert max_area > 0, "max_area must be positive"
+
+    input_mask = mask
+    try:
+        labels, areas = get_connected_components(mask > 0)
+        is_hole = (labels > 0) & (areas <= max_area)
+        # We fill holes with a small positive mask score (0.1) to change them to foreground.
+        mask = torch.where(is_hole, -0.1, mask)
+    except Exception as e:
+        # Skip the post-processing step on removing small holes if the CUDA kernel fails
+        warnings.warn(
+            f"{e}\n\nSkipping the post-processing step due to the error above. You can "
+            "still use SAM 2 and it's OK to ignore the error above, although some post-processing "
+            "functionality may be limited (which doesn't affect the results in most cases; see "
+            "https://github.com/facebookresearch/segment-anything-2/blob/main/INSTALL.md).",
+            category=UserWarning,
+            stacklevel=2,
+        )
+        mask = input_mask
+
+    return mask
+
 
 def concat_points(old_point_inputs, new_points, new_labels):
     """Add new points and labels to previous point inputs (add at the end)."""
